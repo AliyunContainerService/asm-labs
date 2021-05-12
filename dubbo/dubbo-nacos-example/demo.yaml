@@ -1,0 +1,138 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: consumer
+  name: consumer
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: consumer
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/logLevel: "debug"
+      labels:
+        app: consumer
+    spec:
+      containers:
+      - image: registry.cn-hangzhou.aliyuncs.com/asm-labs/dubbo-nacos-consumer:1.0.0
+        imagePullPolicy: IfNotPresent
+        name: dubbo-consumer
+        env:
+        - name: dubbo.registry.address
+          value: "nacos://_NACOS_SERVER_CLUSTERIP_:8848"
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+status: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: consumer
+  name: consumer
+spec:
+  ports:
+  - name: http
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: consumer
+  type: ClusterIP
+status:
+  loadBalancer: {}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: provider
+  name: provider-v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: provider
+      label: v1
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/logLevel: debug
+      labels:
+        app: provider
+        label: v1
+    spec:
+      containers:
+      - image: registry.cn-hangzhou.aliyuncs.com/asm-labs/dubbo-nacos-provider:1.0.0
+        imagePullPolicy: IfNotPresent
+        args: ["2", "nacos://_NACOS_SERVER_CLUSTERIP_:8848" ]
+        name: dubbo-provider
+        resources: {}
+status: {}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: provider
+  name: provider-v2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: provider
+      label: v2
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/logLevel: debug
+      labels:
+        app: provider
+        label: v2
+    spec:
+      containers:
+      - image: registry.cn-hangzhou.aliyuncs.com/asm-labs/dubbo-nacos-provider:2.0.0
+        imagePullPolicy: IfNotPresent
+        args: ["2", "nacos://_NACOS_SERVER_CLUSTERIP_:8848" ]
+        name: dubbo-provider
+        resources: {}
+status: {}
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: provider
+  name: provider
+spec:
+  ports:
+  - name: dubbo
+    port: 20880
+    protocol: TCP
+    targetPort: 20880
+  selector:
+    app: provider
+  type: ClusterIP
+status:
+  loadBalancer: {}
