@@ -1,0 +1,138 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: consumer
+  name: consumer
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: consumer
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/logLevel: "debug"
+      labels:
+        app: consumer
+    spec:
+      containers:
+      - image: registry.cn-hangzhou.aliyuncs.com/asm-labs/springcloud-nacos-consumer:1.0.0
+        imagePullPolicy: Always
+        name: sc-consumer
+        env:
+        - name: NACOS_SERVER
+          value: "NACOS_SERVER_CLUSTERIP:8848"
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+status: {}
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: consumer
+  name: consumer
+spec:
+  ports:
+  - name: http
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: consumer
+  type: ClusterIP
+status:
+  loadBalancer: {}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: provider
+  name: provider-v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: provider
+      label: v1
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/logLevel: debug
+      labels:
+        app: provider
+        label: v1
+    spec:
+      containers:
+      - image: registry.cn-hangzhou.aliyuncs.com/asm-labs/springcloud-nacos-provider:1.0.0
+        imagePullPolicy: Always
+        name: sc-provider
+        env:
+        - name: NACOS_SERVER
+          value: "NACOS_SERVER_CLUSTERIP:8848"
+        resources: {}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: provider
+  name: provider-v2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: provider
+      label: v2
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/logLevel: debug
+      labels:
+        app: provider
+        label: v2
+    spec:
+      containers:
+      - image: registry.cn-hangzhou.aliyuncs.com/asm-labs/springcloud-nacos-provider:2.0.0
+        imagePullPolicy: Always
+        name: sc-provider
+        env:
+        - name: NACOS_SERVER
+          value: "NACOS_SERVER_CLUSTERIP:8848"
+        resources: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: provider
+  name: service-provider  ##It should be the same as the service name under nacos
+spec:
+  ports:
+  - name: http
+    port: 8070
+    protocol: TCP
+    targetPort: 8070
+  selector:
+    app: provider
+  type: ClusterIP
+
+---
