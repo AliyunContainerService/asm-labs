@@ -25,7 +25,7 @@ spec:
         app: consumer
     spec:
       containers:
-      - image: registry.cn-hangzhou.aliyuncs.com/asm-labs/springcloud-nacos-consumer:1.0.0
+      - image: registry.cn-hangzhou.aliyuncs.com/aliacs-app-catalog/asm-springcloud-nacos-consumer:1.0.0
         imagePullPolicy: Always
         name: sc-consumer
         env:
@@ -79,7 +79,7 @@ spec:
         label: v1
     spec:
       containers:
-      - image: registry.cn-hangzhou.aliyuncs.com/asm-labs/springcloud-nacos-provider:1.0.0
+      - image: registry.cn-hangzhou.aliyuncs.com/aliacs-app-catalog/asm-springcloud-nacos-provider:1.0.0
         imagePullPolicy: Always
         name: sc-provider
         env:
@@ -110,7 +110,7 @@ spec:
         label: v2
     spec:
       containers:
-      - image: registry.cn-hangzhou.aliyuncs.com/asm-labs/springcloud-nacos-provider:2.0.0
+      - image: registry.cn-hangzhou.aliyuncs.com/aliacs-app-catalog/asm-springcloud-nacos-provider:2.0.0
         imagePullPolicy: Always
         name: sc-provider
         env:
