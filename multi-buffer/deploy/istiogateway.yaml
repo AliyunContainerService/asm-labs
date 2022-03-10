@@ -1,0 +1,44 @@
+apiVersion: istio.alibabacloud.com/v1beta1
+kind: IstioGateway
+metadata:
+  name: ingressgateway
+  namespace: istio-system
+spec:
+  secretVolumes:
+  - mountPath: /etc/istio/ingressgateway-certs
+    name: ingressgateway-certs
+    secretName: istio-ingressgateway-certs
+  compression: {}
+  cpu: {}
+  dnsPolicy: ClusterFirst
+  externalTrafficPolicy: Local
+  gatewayType: ingress
+  hostNetwork: false
+  kernel:
+    parameters: {}
+  maxReplicas: 1
+  minReplicas: 1
+  ports:
+    - name: http-0
+      port: 80
+      protocol: TCP
+      targetPort: 80
+    - name: https-1
+      port: 443
+      protocol: TCP
+      targetPort: 443
+  readinessProbe: {}
+  replicaCount: 1
+  resources:  
+    limits:
+      cpu: '2'
+      memory: 4G
+    requests:
+      cpu: '2'
+      memory: 4G
+  runAsRoot: true
+  sds: {}
+  serviceAnnotations:
+    service.beta.kubernetes.io/alibaba-cloud-loadbalancer-spec: slb.s1.small
+    service.beta.kubernetes.io/alicloud-loadbalancer-address-type: internet
+  serviceType: LoadBalancer
