@@ -1,0 +1,24 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: istio-myexample-customvirtualservice
+spec:
+  hosts:
+  - "www.aliyun.com"
+  gateways:
+  - istio-myexample-customingressgateway
+  http:
+  - match:
+    - uri:
+       prefix: "/index.html"
+    route:
+    - destination:
+        host: settlementservice.default.svc.cluster.local
+        port:
+          number: 80
+  - route:
+    - destination:
+        host: settlementservice.default.svc.cluster.local
+        port:
+          number: 80
+

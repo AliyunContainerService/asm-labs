@@ -1,0 +1,41 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: settlementservice
+  labels:
+    app: settlementservice
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+  selector:
+    app: settlementservice
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: settlementservice
+spec:
+  selector:
+    matchLabels:
+      app: settlementservice
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: settlementservice
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx
+          readOnly: true
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: myexample-nginx-configmap
