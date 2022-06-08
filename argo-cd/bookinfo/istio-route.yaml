@@ -72,26 +72,6 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
-  name: ratings
-spec:
-  host: ratings
-  subsets:
-  - name: v1
-    labels:
-      version: v1
-  - name: v2
-    labels:
-      version: v2
-  - name: v2-mysql
-    labels:
-      version: v2-mysql
-  - name: v2-mysql-vm
-    labels:
-      version: v2-mysql-vm
----
-apiVersion: networking.istio.io/v1alpha3
-kind: DestinationRule
-metadata:
   name: details
 spec:
   host: details
@@ -102,4 +82,25 @@ spec:
   - name: v2
     labels:
       version: v2
+---
+
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+...
+spec:
+  hosts:
+  - reviews
+  http:
+  - match:
+    - headers:
+        end-user:
+          exact: jason
+    route:
+    - destination:
+        host: reviews
+        subset: v2
+  - route:
+    - destination:
+        host: reviews
+        subset: v1
 ---
