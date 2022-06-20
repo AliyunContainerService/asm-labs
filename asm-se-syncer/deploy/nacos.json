@@ -1,0 +1,9 @@
+[
+  {
+    "name": "nacos-test",
+    "prefix": "",
+    "type": "nacos",
+    "endpoint": "mse-e9e623f0-p.nacos-ans.mse.aliyuncs.com:18848",
+    "toNamespace": "nacos"
+  }
+]
