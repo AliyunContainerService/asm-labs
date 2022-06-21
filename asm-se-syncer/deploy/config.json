@@ -1,9 +1,0 @@
-[
-  {
-    "name": "consul-test",
-    "prefix": "consul-",
-    "type": "consul",
-    "endpoint": "http://localhost:8500",
-    "toNamespace": "default"
-  }
-]
