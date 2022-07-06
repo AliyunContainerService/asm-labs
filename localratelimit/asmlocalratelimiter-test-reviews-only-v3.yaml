@@ -1,0 +1,23 @@
+apiVersion: istio.alibabacloud.com/v1beta1
+kind: ASMLocalRateLimiter
+metadata:
+  name: reviews
+  namespace: default
+spec:
+  workloadSelector:
+    labels:
+      app: reviews
+      version: v3
+  configs:
+    - match:
+        vhost:
+          name: "*"
+          port: 9080
+          route:
+            header_match:
+            - name: ":path"
+              prefix_match: "/"
+      limit:
+         fill_interval:
+            seconds: 1
+         quota: 10

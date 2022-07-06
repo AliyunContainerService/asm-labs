@@ -1,0 +1,39 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: bookinfo
+  namespace: default
+spec:
+  gateways:
+  - bookinfo-gateway
+  hosts:
+  - bf2.example.com
+  http:
+  - match:
+    - uri:
+        exact: /productpage
+    - uri:
+        prefix: /static
+    - uri:
+        exact: /login
+    - uri:
+        exact: /logout
+    - uri:
+        prefix: /api/v1/products
+    name: productpage-route-name1
+    route:
+    - destination:
+        host: productpage
+        port:
+          number: 9080
+  - match:
+    - uri:
+        prefix: /nginx
+    name: nginx-route-name1
+    rewrite:
+      uri: /
+    route:
+    - destination:
+        host: nginx.foo.svc.cluster.local
+        port:
+          number: 80
