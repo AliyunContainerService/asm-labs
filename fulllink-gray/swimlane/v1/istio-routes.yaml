@@ -52,6 +52,34 @@ spec:
 
 
 ---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: vs-mockb
+spec:
+  hosts:
+    - mockb
+  http:
+    - route:
+        - destination:
+            host: mockb
+            subset: $userdefinelabel1
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: vs-mockc
+spec:
+  hosts:
+    - mockc
+  http:
+    - route:
+        - destination:
+            host: mockc
+            subset: $userdefinelabel1
+
+---
 
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
