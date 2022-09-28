@@ -1,0 +1,104 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mocka-v3
+  labels:
+    app: mocka
+    version: v3
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mocka
+      version: v3
+      ASM_TRAFFIC_TAG: v3
+  template:
+    metadata:
+      labels:
+        app: mocka
+        version: v3
+        ASM_TRAFFIC_TAG: v3
+    spec:
+      containers:
+      - name: default
+        image: docker.io/vifoggy/gobin:1.0.0
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: version
+          value: v3
+        - name: app
+          value: mocka
+        - name: upstream_url
+          value: "http://mockb:8000/"
+        ports:
+        - containerPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mockb-v3
+  labels:
+    app: mockb
+    version: v3
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mockb
+      version: v3
+      ASM_TRAFFIC_TAG: v3
+  template:
+    metadata:
+      labels:
+        app: mockb
+        version: v3
+        ASM_TRAFFIC_TAG: v3
+    spec:
+      containers:
+      - name: default
+        image: docker.io/vifoggy/gobin:1.0.0
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: version
+          value: v3
+        - name: app
+          value: mockb
+        - name: upstream_url
+          value: "http://mockc:8000/"
+        ports:
+        - containerPort: 8000
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mockc-v3
+  labels:
+    app: mockc
+    version: v3
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mockc
+      version: v3
+      ASM_TRAFFIC_TAG: v3
+  template:
+    metadata:
+      labels:
+        app: mockc
+        version: v3
+        ASM_TRAFFIC_TAG: v3
+    spec:
+      containers:
+      - name: default
+        image: docker.io/vifoggy/gobin:1.0.0
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: version
+          value: v3
+        - name: app
+          value: mockc
+        ports:
+        - containerPort: 8000
