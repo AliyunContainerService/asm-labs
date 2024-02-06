@@ -1,0 +1,39 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: ingressgateway
+  namespace: istio-system
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - '*'
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: mock
+  namespace: istio-system
+spec:
+  gateways:
+    - ingressgateway
+  hosts:
+    - '*'
+  http:
+    - match:
+        - uri:
+            exact: /mock
+      route:
+        - destination:
+            host: mocka.default.svc.cluster.local
+            subset: v1
+          weight: 50
+        - destination:
+            host: mocka.default.svc.cluster.local
+            subset: v2
+          weight: 50

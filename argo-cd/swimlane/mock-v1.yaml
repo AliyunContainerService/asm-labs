@@ -1,0 +1,151 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mocka
+  namespace: default
+  labels:
+    app: mocka
+    service: mocka
+spec:
+  ports:
+  - port: 8000
+    name: http
+  selector:
+    app: mocka
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mocka-v1
+  namespace: default
+  labels:
+    app: mocka
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mocka
+      version: v1
+      ASM_TRAFFIC_TAG: v1
+  template:
+    metadata:
+      labels:
+        app: mocka
+        version: v1
+        ASM_TRAFFIC_TAG: v1
+    spec:
+      containers:
+      - name: default
+        image: registry.cn-beijing.aliyuncs.com/aliacs-app-catalog/go-http-sample:1.0
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: version
+          value: v1
+        - name: app
+          value: mocka
+        - name: upstream_url
+          value: "http://mockb:8000/"
+        ports:
+        - containerPort: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mockb
+  namespace: default
+  labels:
+    app: mockb
+    service: mockb
+spec:
+  ports:
+  - port: 8000
+    name: http
+  selector:
+    app: mockb
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mockb-v1
+  namespace: default
+  labels:
+    app: mockb
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mockb
+      version: v1
+      ASM_TRAFFIC_TAG: v1
+  template:
+    metadata:
+      labels:
+        app: mockb
+        version: v1
+        ASM_TRAFFIC_TAG: v1
+    spec:
+      containers:
+      - name: default
+        image: registry.cn-beijing.aliyuncs.com/aliacs-app-catalog/go-http-sample:1.0
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: version
+          value: v1
+        - name: app
+          value: mockb
+        - name: upstream_url
+          value: "http://mockc:8000/"
+        ports:
+        - containerPort: 8000
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mockc
+  namespace: default
+  labels:
+    app: mockc
+    service: mockc
+spec:
+  ports:
+  - port: 8000
+    name: http
+  selector:
+    app: mockc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mockc-v1
+  namespace: default
+  labels:
+    app: mockc
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mockc
+      version: v1
+      ASM_TRAFFIC_TAG: v1
+  template:
+    metadata:
+      labels:
+        app: mockc
+        version: v1
+        ASM_TRAFFIC_TAG: v1
+    spec:
+      containers:
+      - name: default
+        image: registry.cn-beijing.aliyuncs.com/aliacs-app-catalog/go-http-sample:1.0
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: version
+          value: v1
+        - name: app
+          value: mockc
+        ports:
+        - containerPort: 8000
