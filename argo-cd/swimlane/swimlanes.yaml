@@ -1,0 +1,19 @@
+apiVersion: istio.alibabacloud.com/v1
+kind: ASMSwimLane
+metadata:
+  labels:
+    swimlane-group: mock
+  name: v1
+spec:
+  labelSelector:
+    version: v1
+---
+apiVersion: istio.alibabacloud.com/v1
+kind: ASMSwimLane
+metadata:
+  labels:
+    swimlane-group: mock
+  name: v2
+spec:
+  labelSelector:
+    version: v2

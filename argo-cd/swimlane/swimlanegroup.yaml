@@ -1,0 +1,17 @@
+apiVersion: istio.alibabacloud.com/v1
+kind: ASMSwimLaneGroup
+metadata:
+  name: mock
+spec:
+  ingress:
+    gateway:
+      name: ingressgateway
+      namespace: istio-system
+      type: ASM
+  services:
+  - name: mocka
+    namespace: default
+  - name: mockb
+    namespace: default
+  - name: mockc
+    namespace: default
