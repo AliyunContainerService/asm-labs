@@ -1,0 +1,17 @@
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: dashscope
+  namespace: default
+spec:
+  hosts:
+    - dashscope.aliyuncs.com
+  ports:
+    - name: http-port
+      number: 80
+      protocol: HTTP
+      targetPort: 443
+    - name: https-port
+      number: 443
+      protocol: HTTPS
+  resolution: DNS
