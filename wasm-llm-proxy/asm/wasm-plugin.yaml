@@ -1,0 +1,25 @@
+apiVersion: extensions.istio.io/v1alpha1
+kind: WasmPlugin
+metadata:
+  name: asm-llm-proxy
+  namespace: default
+spec:
+  imagePullPolicy: Always
+  imagePullSecret: test-acr-secret
+  selector:
+    matchLabels:
+      app: sleep
+  url: your wasm plugin image url
+  phase: AUTHN
+  pluginConfig:
+    "hosts":
+    - dashscope.aliyuncs.com
+    "api_key": "you api_key"
+    "allow_patterns": []
+    "deny_patterns": [".*账号.*"]  # 带有“账号”关键字的请求将被拒绝
+    "intelligent_guard":
+      "host": "dashscope.aliyuncs.com"  # service entry中的host
+      "port": 80 # service entry 中的port
+      "path": "/compatible-mode/v1/chat/completions"
+      "model": "qwen-turbo"
+      "api_key": "your api_key"

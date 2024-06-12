@@ -1,0 +1,89 @@
+admin:
+  address:
+    socket_address:
+      address: 0.0.0.0
+      port_value: 9902
+static_resources:
+  listeners:
+    - name: main
+      address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: 18000
+      filter_chains:
+        - filters:
+            - name: envoy.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: ingress_http
+                codec_type: auto
+                stream_idle_timeout: "0s"
+                common_http_protocol_options:
+                  idle_timeout: "3600s"
+                route_config:
+                  name: local_route
+                  virtual_hosts:
+                    - name: test_host
+                      domains:
+                        - "*"
+                      routes:
+                        - match:
+                            prefix: "/"
+                          route:
+                            host_rewrite_literal: dashscope.aliyuncs.com
+                            cluster: outbound|443||dashscope.aliyuncs.com
+                            # 如果没有这个配置，上游响应太慢会超时。流式传输也会超时
+                            timeout: "0s"
+
+
+                http_filters:
+                  - name: envoy.filters.http.wasm
+                    typed_config:
+                      "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+                      type_url: type.googleapis.com/envoy.extensions.filters.http.wasm.v3.Wasm
+                      value:
+                        config:
+                          configuration:
+                            "@type": type.googleapis.com/google.protobuf.StringValue
+                            value: |
+                              {
+                                "hosts": ["127.0.0.1:18000"],
+                                "api_key": "your api_key",
+                                "allow_patterns": [],
+                                "deny_patterns": [".*账号.*"],
+                                "intelligent_guard": {
+                                  "host": "dashscope.aliyuncs.com",
+                                  "port": 443,
+                                  "path": "/compatible-mode/v1/chat/completions",
+                                  "model": "qwen2-72b-instruct",
+                                  "api_key": "your api_key"
+                                }
+                              }
+                          vm_config:
+                            runtime: "envoy.wasm.runtime.v8"
+                            code:
+                              local:
+                                filename: "main.wasm"
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+  clusters:
+    - name: outbound|443||dashscope.aliyuncs.com
+      type: LOGICAL_DNS
+      # Comment out the following line to test on v6 networks
+      dns_lookup_family: V4_ONLY
+      connect_timeout: 100s
+      load_assignment:
+        cluster_name: outbound|443||dashscope.aliyuncs.com
+        endpoints:
+        - lb_endpoints:
+          - endpoint:
+              address:
+                socket_address:
+                  address: dashscope.aliyuncs.com
+                  port_value: 443
+      transport_socket:
+        name: envoy.transport_sockets.tls
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          sni: dashscope.aliyuncs.com

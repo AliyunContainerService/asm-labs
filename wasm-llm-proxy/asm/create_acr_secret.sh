@@ -1,0 +1,1 @@
+k create secret docker-registry test-acr-secret --docker-server=ddddd --docker-username=ddddd --docker-password=ddddd

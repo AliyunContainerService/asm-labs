@@ -1,0 +1,1 @@
+tinygo build -o build/plugin.wasm -gc=custom -tags='custommalloc nottinygc_envoy'  -target=wasi -scheduler=none .
