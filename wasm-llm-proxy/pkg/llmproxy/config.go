@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	openai "github.com/sashabaranov/go-openai"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 )
 
@@ -91,13 +92,13 @@ func (c *LLMProxyConfig) Init() error {
 	return nil
 }
 
-func (c *LLMProxyConfig) RunMessageGuard(llmRequest *LLMRequestBody) error {
+func (c *LLMProxyConfig) RunMessageGuard(req *openai.ChatCompletionRequest) error {
 	if c == nil {
 		proxywasm.LogInfof("nil llm request, pass check")
 		return nil
 	}
 
-	for _, message := range llmRequest.Messages {
+	for _, message := range req.Messages {
 		// message.
 		if strings.ToLower(message.Role) != "user" {
 			continue
@@ -130,9 +131,9 @@ func (c *LLMProxyConfig) RunMessageGuard(llmRequest *LLMRequestBody) error {
 	return nil
 }
 
-func (c *LLMProxyConfig) RunIntelligentGuard(llmRequest *LLMRequestBody) error {
+func (c *LLMProxyConfig) RunIntelligentGuard(req *openai.ChatCompletionRequest) error {
 	proxywasm.LogInfo("in RunIntelligentGuard")
-	userInput := llmRequest.GetMessageString()
+	userInput := getUserMessageString(req)
 	body := fmt.Sprintf(`
 {
 	"model": "%v",
@@ -206,8 +207,8 @@ func (c *LLMProxyConfig) IntelligentGuardCallback(numHeaders, bodySize, numTrail
 		return
 	}
 
-	llmResponseBody := &LLMResponseBody{}
-	err = json.Unmarshal(body, &llmResponseBody)
+	llmResponseBody := &openai.ChatCompletionResponse{}
+	err = json.Unmarshal(body, llmResponseBody)
 	if err != nil {
 		proxywasm.LogErrorf("failed to unmarshal external response: %v", err)
 		proxywasm.SendHttpResponse(403, nil, []byte("failed to unmarshal external response: "+err.Error()), -1)

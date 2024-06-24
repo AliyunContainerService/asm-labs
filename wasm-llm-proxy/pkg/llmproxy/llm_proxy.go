@@ -1,8 +1,10 @@
 package llmproxy
 
 import (
+	"encoding/json"
 	"strings"
 
+	openai "github.com/sashabaranov/go-openai"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm"
 	"github.com/tetratelabs/proxy-wasm-go-sdk/proxywasm/types"
 )
@@ -59,13 +61,13 @@ func (p *LLMProxy) OnHttpRequestBody(bodySize int, endOfStream bool) types.Actio
 		return types.ActionContinue
 	}
 	proxywasm.LogInfo(string(requestBytes))
-	llmRequestBody, err := NewLLMRequestBody(requestBytes)
-	if err != nil {
-		proxywasm.LogWarnf("error in GetLLMRequest: %v", err)
+	openaiReq := &openai.ChatCompletionRequest{}
+	if err := json.Unmarshal(requestBytes, openaiReq); err != nil {
+		proxywasm.LogWarnf("error in Unmarshal OpenAIRequest: %v", err)
 		return types.ActionContinue
 	}
 
-	err = p.Config.RunMessageGuard(llmRequestBody)
+	err = p.Config.RunMessageGuard(openaiReq)
 	if err != nil {
 		proxywasm.LogWarnf("error in RunMessageGuard: %v, send local reply", err)
 		err := proxywasm.SendHttpResponse(403, nil, []byte("request was denied by asm llm proxy"), -1)
@@ -76,7 +78,7 @@ func (p *LLMProxy) OnHttpRequestBody(bodySize int, endOfStream bool) types.Actio
 	}
 
 	if p.Config.IntelligentGuard != nil {
-		err = p.Config.RunIntelligentGuard(llmRequestBody)
+		err = p.Config.RunIntelligentGuard(openaiReq)
 		if err != nil {
 			proxywasm.LogWarnf("error in RunIntelligentGuard: %v, send local reply", err)
 			err := proxywasm.SendHttpResponse(403, nil, []byte(err.Error()), -1)
@@ -114,49 +116,3 @@ func (p *LLMProxy) addAuhthorizationHeader() types.Action {
 	}
 	return types.ActionContinue
 }
-
-// Override types.DefaultHttpContext.
-// func (ctx *LLMProxy) OnHttpResponseBody(bodySize int, endOfStream bool) types.Action {
-// 	if bodySize > 0 {
-// 		ctx.responseChunks++
-// 		ctx.totalResponseBodySize += bodySize
-// 		chunk, err := proxywasm.GetHttpResponseBody(0, bodySize)
-// 		if err != nil {
-// 			proxywasm.LogCriticalf("failed to get response body: %v", err)
-// 			return types.ActionContinue
-// 		}
-// 		proxywasm.LogInfof("read chunk size: %d", len(chunk))
-// 		proxywasm.LogInfof("current chunk: %v", string(chunk))
-// 		if len(chunk) != bodySize {
-// 			proxywasm.LogErrorf("read data does not match the expected size: %d != %d", len(chunk), bodySize)
-// 		}
-// 	}
-// 	if endOfStream {
-// 		proxywasm.LogInfof("stream end, totol response body size %d, total chunks: %d", ctx.totalResponseBodySize, ctx.responseChunks)
-// 	}
-// 	return types.ActionContinue
-// }
-
-// Override types.DefaultHttpContext.
-// func (p *LLMProxy) OnHttpRequestBody(bodySize int, endOfStream bool) types.Action {
-// 	proxywasm.LogInfof("OnHttpRequestBody called. BodySize: %d, totalRequestBodyReadSize: %d, endOfStream: %v", bodySize, p.totalRequestBodyReadSize, endOfStream)
-// 	if bodySize > 0 {
-// 		p.totalRequestBodyReadSize += bodySize
-// 		p.receivedChunks++
-// 		chunk, err := proxywasm.GetHttpRequestBody(0, bodySize)
-// 		if err != nil {
-// 			proxywasm.LogCriticalf("failed to get request body: %v", err)
-// 			return types.ActionContinue
-// 		}
-// 		proxywasm.LogInfof("read chunk size: %d", len(chunk))
-// 		proxywasm.LogInfof("current chunk: %v", string(chunk))
-// 		if len(chunk) != bodySize {
-// 			proxywasm.LogErrorf("read data does not match the expected size: %d != %d", len(chunk), bodySize)
-// 		}
-// 	}
-// 	// When endOfStream is true, we have received the entire body. We expect the total size is equal to the sum of the sizes of the chunks.
-// 	if endOfStream {
-// 		proxywasm.LogInfof("stream end, totol request body size %d", p.totalRequestBodyReadSize)
-// 	}
-// 	return types.ActionContinue
-// }

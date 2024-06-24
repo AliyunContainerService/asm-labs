@@ -7,4 +7,7 @@ require (
 	github.com/wasilibs/nottinygc v0.7.1
 )
 
-require github.com/magefile/mage v1.14.0 // indirect
+require (
+	github.com/magefile/mage v1.14.0 // indirect
+	github.com/sashabaranov/go-openai v1.26.0
+)

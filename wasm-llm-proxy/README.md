@@ -44,3 +44,5 @@ type IntelligentGuard struct {
 	API_KEY *string `json:"api_key"` // api_key for dashscope, can not be empty
 }
 ```
+# v0.0.3
+- Use OpenAI Request Spec, refer to [go-openai](https://github.com/sashabaranov/go-openai).
