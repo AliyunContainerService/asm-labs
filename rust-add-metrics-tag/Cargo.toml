@@ -1,0 +1,12 @@
+[package]
+name = "rust-add-metrics-tag"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+log = "0.4.8"
+proxy-wasm = "0.2.2"
+base64 = "0.21"
