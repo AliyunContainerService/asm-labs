@@ -1,0 +1,64 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: asm-wasm-cache-service-example
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: asm-wasm-cache-service-example
+  labels:
+    app: asm-wasm-cache-service-example
+    service: asm-wasm-cache-service-example
+spec:
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+  selector:
+    app: asm-wasm-cache-service-example
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: asm-wasm-cache-service-example
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: asm-wasm-cache-service-example
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: asm-wasm-cache-service-example
+        version: v1
+      annotations:
+        sidecar.istio.io/inject: "true"
+    spec:
+      tolerations:
+      - key: "node.kubernetes.io/disk-pressure"
+        operator: "Equal"
+        value: ""
+        effect: "NoSchedule"
+      serviceAccountName: asm-wasm-cache-service-example
+      containers:
+      - image: ${当前镜像地址}
+        imagePullPolicy: IfNotPresent
+        name: asm-wasm-cache-service-example
+        ports:
+        - containerPort: 8080
+        env:
+        - name: REDIS_ADDRESS
+          value: ${redis实例地址以及端口}
+        - name: REDIS_PASSWORD
+          value: "${用户名}:${密码}"
+        - name: REDIS_EXPIRED_SECONDS
+          value: "600"
+        resources:
+          limits:
+            memory: 256Mi
+            cpu: 200m
+          requests:
+            memory: 64Mi
+            cpu: 50m
