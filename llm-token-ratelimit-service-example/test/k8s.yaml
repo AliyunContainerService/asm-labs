@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: asm-llm-token-ratelimit-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: asm-llm-token-ratelimit-service
+  labels:
+    app: asm-llm-token-ratelimit-service
+    service: asm-llm-token-ratelimit-service
+spec:
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+  selector:
+    app: asm-llm-token-ratelimit-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: asm-llm-token-ratelimit-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: asm-llm-token-ratelimit-service
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: asm-llm-token-ratelimit-service
+        version: v1
+      annotations:
+        sidecar.istio.io/inject: "true"
+    spec:
+      tolerations:
+      - key: "node.kubernetes.io/disk-pressure"
+        operator: "Equal"
+        value: ""
+        effect: "NoSchedule"
+      serviceAccountName: asm-llm-token-ratelimit-service
+      containers:
+      - image: registry-cn-hangzhou.ack.aliyuncs.com/acs/asm-wasm-token-rate-limit-example:v1.23.6.34-g92d6a4b-aliyun
+        imagePullPolicy: IfNotPresent
+        name: asm-llm-token-ratelimit-service
+        ports:
+        - containerPort: 8080
+        env:
+        - name: REDIS_ADDRESS
+          value: ${redis-address}:${redis-port}
+        - name: REDIS_PASSWORD
+          value: "${redis-user}:${password}"
+        - name: RATE_LIMIT_CONFIG
+          value: |
+            [
+              {
+                "rate_limit_key_regex": "regular-user.*",
+                "redis_expired_seconds": 100,
+                "fill_interval_second": 60,
+                "tokens_per_fill": 50,
+                "max_tokens": 100
+              },
+              {
+                "rate_limit_key_regex": "subscriber-.*",
+                "redis_expired_seconds": 200,
+                "fill_interval_second": 60,
+                "tokens_per_fill": 100,
+                "max_tokens": 1000
+              }
+            ]
+        resources:
+          limits:
+            memory: 256Mi
+            cpu: 200m
+          requests:
+            memory: 64Mi
+            cpu: 50m
