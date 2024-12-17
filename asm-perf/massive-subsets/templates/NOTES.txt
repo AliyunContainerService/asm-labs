@@ -1,0 +1,3 @@
+[ASM-PERF - MASSIVE SUBSETS AND CIRCUIT BREAKERS]
+This is a performance testing for thousands of routes and circuit breakers for a single service.
+Deploying {{ .Values.deployReplicas }} httpbin deployments in namespace {{ .Values.namespace }}.
