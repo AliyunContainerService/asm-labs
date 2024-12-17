@@ -1,0 +1,22 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: httpbin
+  namespace: {{ .Values.namespace }}
+spec:
+  hosts:
+  - httpbin
+  http:
+  {{- $indices := untilStep 1 (int (add .Values.deployReplicas 1)) 1 }}
+  {{- range $indices }}
+  - name: httpbin-route-v{{ . }}
+    match:
+    - headers:
+        x-version:
+          exact: v{{ . }}
+    route:
+    - destination:
+        host: httpbin
+        subset: v{{ . }}
+      weight: 100
+  {{- end }}

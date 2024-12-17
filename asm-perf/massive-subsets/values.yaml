@@ -1,0 +1,2 @@
+deployReplicas: 2
+namespace: asm-perf

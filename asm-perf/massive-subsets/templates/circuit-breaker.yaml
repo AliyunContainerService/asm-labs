@@ -1,0 +1,31 @@
+{{- $indices := untilStep 1 (int (add .Values.deployReplicas 1)) 1 }}
+{{- range $indices }}
+---
+apiVersion: istio.alibabacloud.com/v1
+kind: ASMCircuitBreaker
+metadata:
+  name: circuitbreaker-v{{ . }}
+  namespace: {{ $.Values.namespace }}
+spec:
+  workloadSelector:
+    labels:
+      app: fortio
+  configs:
+  - match:
+      vhost:
+        name: httpbin
+        port: 8000
+        route:
+          name_match: httpbin-route-v{{ . }}
+    breaker_config:
+      break_duration: 10s
+      window_size: 10s
+      min_request_amount: 5
+      error_percent:
+        value: 80
+      custom_response:
+        header_to_add:
+          x-envoy-circuitbreak: "true"
+        body: "hello, break!"
+        status_code: 499
+{{- end }}

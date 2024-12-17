@@ -1,0 +1,37 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: add-x-version-header
+  namespace: {{ .Values.namespace }}
+  labels:
+    asm-system: "true"
+    provider: asm
+spec:
+  workloadSelector:
+    labels:
+      app: fortio
+  configPatches:
+  - applyTo: HTTP_FILTER
+    match:
+      proxy:
+        proxyVersion: ^1\.*
+      context: SIDECAR_OUTBOUND
+      listener:
+        filterChain:
+          filter:
+            name: "envoy.filters.network.http_connection_manager"
+            subFilter:
+              name: "envoy.filters.http.router"
+    patch:
+      operation: INSERT_BEFORE
+      filterClass: AUTHN
+      value:
+        name: envoy.filters.http.lua
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+          inlineCode: |
+            function envoy_on_request(request_handle)
+                math.randomseed(os.time())
+                local version = string.format("v%d", math.random(1, {{ .Values.deployReplicas }}))
+                request_handle:headers():add("x-version", version)
+            end
