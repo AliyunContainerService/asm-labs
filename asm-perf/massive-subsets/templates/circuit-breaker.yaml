@@ -13,7 +13,7 @@ spec:
   configs:
   - match:
       vhost:
-        name: httpbin
+        name: httpbin.{{ $.Values.namespace }}.svc.cluster.local
         port: 8000
         route:
           name_match: httpbin-route-v{{ . }}
