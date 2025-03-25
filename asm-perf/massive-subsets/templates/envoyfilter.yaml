@@ -21,7 +21,7 @@ spec:
           filter:
             name: "envoy.filters.network.http_connection_manager"
             subFilter:
-              name: "envoy.filters.http.router"
+              name: "com.aliyun.fallback"
     patch:
       operation: INSERT_BEFORE
       filterClass: AUTHN
