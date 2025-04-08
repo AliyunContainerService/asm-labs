@@ -186,6 +186,9 @@ metadata:
   name: demo
   namespace: default
 spec:
+  workloadSelector:
+    labels:
+      app: httpbin
   configs:
     - match:
         vhost:

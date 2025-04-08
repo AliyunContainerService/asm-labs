@@ -1,0 +1,5 @@
+[ASM-PERF - ADAPTIVE SCHEDULER PERFORMANCE TEST]
+This is a performance testing for adaptive xds.
+
+[NAMESPACE] {{ .Release.Namespace }}
+[HTTPBIN REPLICAS] {{ .Values.httpbinReplicas }}
