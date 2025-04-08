@@ -1,0 +1,43 @@
+{{- $indices := untilStep 1 (int (add .Values.httpbinReplicas 1)) 1 }}
+{{- range $indices }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpbin-v{{ . }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: httpbin
+      version: v{{ . }}
+  template:
+    metadata:
+      labels:
+        app: httpbin
+        version: v{{ . }}
+    spec:
+      containers:
+      - image: registry-cn-hangzhou.ack.aliyuncs.com/ack-demo/httpbin:0.1.0
+        imagePullPolicy: IfNotPresent
+        name: httpbin
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin-v{{ . }}
+  labels:
+    app: httpbin
+    service: httpbin
+spec:
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 80
+  selector:
+    app: httpbin
+    version: v{{ . }}
+{{- end }}
