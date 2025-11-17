@@ -1,0 +1,40 @@
+# Use the official Golang image to create a build artifact
+FROM golang:1.21-alpine AS builder
+
+# Set the Current Working Directory inside the container
+WORKDIR /app
+
+# Copy go mod and sum files
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the source from the current directory to the Working Directory inside the container
+COPY producer/main.go .
+
+# Build the Go app
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o producer .
+
+# Start a new stage from scratch
+FROM alpine:latest
+
+# Install ca-certificates for HTTPS requests
+RUN apk --no-cache add ca-certificates
+
+# Create a non-root user
+RUN adduser -D -s /bin/sh appuser
+
+# Create app directory
+WORKDIR /app
+
+# Copy the binary from builder stage
+COPY --from=builder /app/producer .
+
+# Change ownership to the non-root user
+RUN chown -R appuser:appuser /app
+USER appuser
+
+# Expose port (default is 8080, but can be changed via environment variable)
+EXPOSE 8080
+
+# Command to run the executable
+CMD ["./producer"]

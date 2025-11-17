@@ -1,0 +1,54 @@
+{{- range .Values.swimlane.versions }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-d-{{ .name }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    app: app-d
+    version: {{ .name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app-d
+      version: {{ .name }}
+  template:
+    metadata:
+      labels:
+        app: app-d
+        version: {{ .name }}
+    spec:
+      containers:
+        - name: default
+          image: registry-cn-hangzhou.ack.aliyuncs.com/ack-demo/go-http-sample:tracing
+          imagePullPolicy: {{ $.Values.global.image.pullPolicy }}
+          env:
+            - name: version
+              value: {{ .name | quote }}
+            - name: app
+              value: "app-d"
+            - name: upstream_url
+              value: "http://upstream:8000"
+            - name: PASSTHROUGH_HEADERS
+              value: "x-request-id,{{ $.Values.swimlane.routeHeader }}"
+          ports:
+            - containerPort: 8000
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-d
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: app-d
+spec:
+  selector:
+    app: app-d
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+  type: ClusterIP

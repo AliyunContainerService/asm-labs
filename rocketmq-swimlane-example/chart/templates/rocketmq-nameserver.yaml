@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rocketmq-nameserver
+  namespace: {{ .Values.rocketmq.namespace }}
+  labels:
+    app: rocketmq-nameserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rocketmq-nameserver
+  template:
+    metadata:
+      labels:
+        app: rocketmq-nameserver
+    spec:
+      containers:
+      - name: nameserver
+        image: {{ .Values.rocketmq.image.repository }}:{{ .Values.rocketmq.image.tag }}
+        imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+        command:
+        - sh
+        - -c
+        - |
+          cd /home/rocketmq/rocketmq-4.9.3/bin && export JAVA_OPT_EXT="-server -Xms512m -Xmx512m -Xmn256m" && ./mqnamesrv
+        ports:
+        - containerPort: 9876
+          name: namesrv
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.rocketmq.namesrv.name }}
+  namespace: {{ .Values.rocketmq.namespace }}
+  labels:
+    app: rocketmq-nameserver
+spec:
+  selector:
+    app: rocketmq-nameserver
+  ports:
+    - protocol: TCP
+      port: 9876
+      targetPort: 9876
+  type: ClusterIP
