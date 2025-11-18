@@ -1,0 +1,6 @@
+apiVersion: v2
+name: rocketmq-swimlane-example
+description: A Helm chart for RocketMQ swimlane example with producer and consumer
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

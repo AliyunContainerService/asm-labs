@@ -1,0 +1,56 @@
+{{- range .Values.swimlane.versions }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rocketmq-producer-{{ .name }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    app: rocketmq-producer
+    version: {{ .name }}
+spec:
+  replicas: {{ .replicas }}
+  selector:
+    matchLabels:
+      app: rocketmq-producer
+      version: {{ .name }}
+  template:
+    metadata:
+      labels:
+        app: rocketmq-producer
+        version: {{ .name }}
+    spec:
+      containers:
+      - name: producer
+        image: {{ $.Values.producer.image.repository }}:{{ $.Values.producer.image.tag }}
+        imagePullPolicy: {{ $.Values.global.image.pullPolicy }}
+        ports:
+        - containerPort: {{ $.Values.producer.env.listenPort }}
+        env:
+        - name: TAG_NAME
+          value: {{ .name | quote }}
+        - name: LISTEN_PORT
+          value: "8080"
+        - name: NAMESRV_ADDR
+          value: "{{ $.Values.rocketmq.namesrv.name }}.{{ $.Values.rocketmq.namespace }}:9876"
+        - name: TAG_PROPERTY_NAME
+          value: {{ $.Values.swimlane.routeHeader | quote }}
+        - name: HTTP_HEADER_NAME
+          value: {{ $.Values.swimlane.routeHeader | quote }}
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rocketmq-producer
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: rocketmq-producer
+spec:
+  selector:
+    app: rocketmq-producer
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP

@@ -1,0 +1,161 @@
+# create-topic-job-with-retry.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: topic-creation-script
+  namespace: {{ .Values.rocketmq.namespace }}
+data:
+  create-topic.sh: |
+    #!/bin/bash
+    set -e
+    
+    # 配置
+    NAMESRV="${NAMESRV_ADDR:-localhost:9876}"
+    TOPIC="${TOPIC_NAME:-swimlane-test-topic}"
+    QUEUE_NUM="${QUEUE_NUM:-8}"
+    MAX_RETRIES=30
+    RETRY_INTERVAL=10
+    TIMEOUT=300
+    
+    log_info() { echo "[INFO] $(date '+%Y-%m-%d %H:%M:%S') - $1"; }
+    log_success() { echo "[SUCCESS] $(date '+%Y-%m-%d %H:%M:%S') - $1"; }
+    log_warn() { echo "[WARN] $(date '+%Y-%m-%d %H:%M:%S') - $1"; }
+    log_error() { echo "[ERROR] $(date '+%Y-%m-%d %H:%M:%S') - $1"; }
+    
+    check_nameserver() {
+        local host=${NAMESRV%:*}
+        local port=${NAMESRV#*:}
+        nc -zv -w 3 "$host" "$port" 2>&1 | grep -q "succeeded\|open\|Connected"
+    }
+    
+    wait_for_broker() {
+        local retry=0
+        local start_time=$(date +%s)
+        
+        log_info "Waiting for Broker to register..."
+        
+        while [ $retry -lt $MAX_RETRIES ]; do
+            local current_time=$(date +%s)
+            local elapsed=$((current_time - start_time))
+            
+            if [ $elapsed -ge $TIMEOUT ]; then
+                log_error "Timeout after ${TIMEOUT}s"
+                return 1
+            fi
+            
+            retry=$((retry + 1))
+            log_info "Attempt $retry/$MAX_RETRIES (${elapsed}s elapsed)"
+            
+            if ! check_nameserver; then
+                log_warn "NameServer not ready, retrying..."
+                sleep $RETRY_INTERVAL
+                continue
+            fi
+            
+            local cluster_info=$(cd /home/rocketmq/rocketmq-4.9.3/bin && \
+                                ./mqadmin clusterList -n "$NAMESRV" 2>&1)
+            
+            if [ $? -eq 0 ]; then
+                local broker_count=$(echo "$cluster_info" | grep -v "^#" | grep -v "^$" | wc -l)
+                if [ "$broker_count" -gt 0 ]; then
+                    log_success "Broker is ready"
+                    return 0
+                fi
+            fi
+            
+            log_warn "Broker not ready, retrying in ${RETRY_INTERVAL}s..."
+            sleep $RETRY_INTERVAL
+        done
+        
+        log_error "Max retries reached"
+        return 1
+    }
+    
+    create_topic() {
+        cd /home/rocketmq/rocketmq-4.9.3/bin
+        
+        log_info "Getting cluster name..."
+        local cluster=$(./mqadmin clusterList -n "$NAMESRV" | grep -v "^#" | awk 'NR==1 {print $1}')
+        
+        if [ -z "$cluster" ]; then
+            log_error "No cluster found"
+            return 1
+        fi
+        
+        log_success "Found cluster: $cluster"
+        log_info "Creating Topic: $TOPIC"
+        
+        ./mqadmin updateTopic \
+            -n "$NAMESRV" \
+            -c "$cluster" \
+            -t "$TOPIC" \
+            -r "$QUEUE_NUM" \
+            -w "$QUEUE_NUM"
+        
+        if [ $? -eq 0 ]; then
+            log_success "Topic created successfully"
+            
+            # 验证
+            log_info "Verifying Topic..."
+            ./mqadmin topicStatus -n "$NAMESRV" -t "$TOPIC"
+            return 0
+        else
+            log_error "Failed to create topic"
+            return 1
+        fi
+    }
+    
+    main() {
+        log_info "=========================================="
+        log_info "RocketMQ Topic Creation"
+        log_info "NameServer: $NAMESRV"
+        log_info "Topic: $TOPIC"
+        log_info "=========================================="
+        
+        if ! wait_for_broker; then
+            exit 1
+        fi
+        
+        if ! create_topic; then
+            exit 1
+        fi
+        
+        log_success "=========================================="
+        log_success "Completed successfully!"
+        log_success "=========================================="
+    }
+    
+    main
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rocketmq-topic-init
+  namespace: {{ .Values.rocketmq.namespace }}
+  labels:
+    app: rocketmq-topic-init
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      volumes:
+      - name: scripts
+        configMap:
+          name: topic-creation-script
+          defaultMode: 0755
+      containers:
+      - name: create-topic
+        image: {{ .Values.rocketmq.image.repository }}:{{ .Values.rocketmq.image.tag }}
+        imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+        command: ["/bin/bash", "/scripts/create-topic.sh"]
+        env:
+        - name: NAMESRV_ADDR
+          value: "{{ .Values.rocketmq.namesrv.name }}:9876"
+        - name: TOPIC
+          value: {{ .Values.swimlane.routeHeader | quote }}
+        volumeMounts:
+        - name: scripts
+          mountPath: /scripts

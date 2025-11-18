@@ -1,0 +1,99 @@
+# RocketMQ Broker ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rocketmq-broker-cm
+  namespace: {{ .Values.rocketmq.namespace }}
+data:
+  broker.conf: |
+    brokerClusterName = DefaultCluster
+    brokerName = broker-a
+    brokerId = 0
+    deleteWhen = 04
+    fileReservedTime = 48
+    brokerRole = ASYNC_MASTER
+    flushDiskType = ASYNC_FLUSH
+    listenPort = 10911
+    namesrvAddr = {{ .Values.rocketmq.namesrv.name }}:9876
+---
+# RocketMQ Broker
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rocketmq-broker
+  namespace: {{ .Values.rocketmq.namespace }}
+  labels:
+    app: rocketmq-broker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rocketmq-broker
+  template:
+    metadata:
+      labels:
+        app: rocketmq-broker
+    spec:
+      initContainers:
+      - name: broker-permission-fix
+        image: busybox:1.31.1
+        command: ['sh', '-c', 'chmod -R 777 /opt/rocketmq/store']
+        volumeMounts:
+        - name: store-dir
+          mountPath: /opt/rocketmq/store
+      containers:
+      - name: broker
+        image: {{ .Values.rocketmq.image.repository }}:{{ .Values.rocketmq.image.tag }}
+        imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+        command:
+        - sh
+        - -c
+        - |
+          # Start the broker with the pod IP as a system property
+          cd /home/rocketmq/rocketmq-4.9.3/bin && export JAVA_OPT_EXT="-server -Xms1g -Xmx1g -Xmn512m -Drocketmq.broker.ip1=${POD_IP:-127.0.0.1}" && ./mqbroker -c /home/rocketmq/rocketmq-4.9.3/conf/broker.conf
+        ports:
+        - containerPort: 10911
+          name: broker
+        - containerPort: 10909
+          name: broker-ha
+        - containerPort: 10912
+          name: broker-ssl
+        env:
+        - name: NAMESRV_ADDR
+          value: "{{ .Values.rocketmq.namesrv.name }}:9876"
+        - name: BROKER_NAME
+          value: "broker-a"
+        - name: BROKER_ID
+          value: "0"
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        volumeMounts:
+        - name: broker-cm
+          mountPath: /home/rocketmq/rocketmq-4.9.3/conf/broker.conf
+          subPath: broker.conf
+        - name: store-dir
+          mountPath: /opt/rocketmq/store
+      volumes:
+      - name: broker-cm
+        configMap:
+          name: rocketmq-broker-cm
+      - name: store-dir
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rocketmq-broker
+  namespace: {{ .Values.rocketmq.namespace }}
+  labels:
+    app: rocketmq-broker
+spec:
+  selector:
+    app: rocketmq-broker
+  ports:
+    - protocol: TCP
+      port: 10911
+      targetPort: 10911
+  type: ClusterIP

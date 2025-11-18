@@ -1,0 +1,64 @@
+# Default values for rocketmq-swimlane-example
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Swimlane configuration - defines the traffic routing strategy for ASM
+swimlane:
+  # Header used for traffic routing in ASM
+  routeHeader: "x-asm-prefer-tag"
+  # List of swimlane versions to deploy
+  versions:
+  - name: "v1"  # Name of the swimlane version
+  - name: "v2"  # Name of the swimlane version
+
+# Global configuration values
+global:
+  # Namespace where the main application components will be deployed
+  namespace: swimlane-test
+  # Global image pull policy for all containers
+  image:
+    pullPolicy: Always
+
+# Gateway configuration for external traffic routing
+gateway:
+  # Whether to enable the gateway resources
+  enabled: true
+  # Istio gateway to use (typically ingressgateway)
+  istio: ingressgateway
+  # Host for the gateway (use '*' to accept all hosts or specify domain)
+  host: "*"
+  # Port for the gateway to expose service
+  port: 80
+
+# RocketMQ-specific configuration
+rocketmq:
+  # Namespace where RocketMQ components (namesrv, broker) will be deployed
+  namespace: rocketmq-system
+  # Whether to enable RocketMQ components
+  enabled: true
+  # Image configuration for RocketMQ components
+  image:
+    repository: apache/rocketmq
+    tag: "4.9.3"
+  # Nameserver configuration
+  namesrv:
+    # Service name for the RocketMQ nameserver
+    name: rocketmq-namesrv
+
+# Producer application configuration
+producer:
+  # Image configuration for the producer application
+  image:
+    repository: registry-cn-hangzhou.ack.aliyuncs.com/dev/asm/swimlane-producer
+    tag: v0.1
+  # Environment variable settings for the producer
+  env:
+    # Port on which the producer application listens
+    listenPort: 8080
+
+# Consumer application configuration
+consumer:
+  # Image configuration for the consumer application
+  image:
+    repository: registry-cn-hangzhou.ack.aliyuncs.com/dev/asm/swimlane-consumer
+    tag: v0.1

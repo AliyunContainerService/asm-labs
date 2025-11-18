@@ -1,0 +1,37 @@
+{{- range .Values.swimlane.versions }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rocketmq-consumer-{{ .name }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    app: rocketmq-consumer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rocketmq-consumer
+      version: {{ .name }}
+  template:
+    metadata:
+      labels:
+        app: rocketmq-consumer
+        version: {{ .name }}
+    spec:
+      containers:
+      - name: consumer
+        image: {{ $.Values.consumer.image.repository }}:{{ $.Values.consumer.image.tag }}
+        imagePullPolicy: {{ $.Values.global.image.pullPolicy }}
+        env:
+        - name: TAG_NAME
+          value: {{ .name | quote }}
+        - name: HTTP_SERVER
+          value: "http://app-d:8000"
+        - name: NAMESRV_ADDR
+          value: "{{ $.Values.rocketmq.namesrv.name }}.{{ $.Values.rocketmq.namespace }}:9876"
+        - name: TAG_PROPERTY_NAME
+          value: {{ $.Values.swimlane.routeHeader | quote }}
+        - name: HTTP_HEADER_NAME
+          value: {{ $.Values.swimlane.routeHeader | quote }}
+{{- end }}
