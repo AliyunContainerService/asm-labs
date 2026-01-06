@@ -23,6 +23,7 @@ import (
 
 	"alibabacloud.com/servicemesh/test/ack"
 	"alibabacloud.com/servicemesh/test/asm"
+	"alibabacloud.com/servicemesh/test/utils"
 	v1 "sigs.k8s.io/gateway-api/apis/v1"
 	"sigs.k8s.io/gateway-api/conformance/tests"
 	conformanceconfig "sigs.k8s.io/gateway-api/conformance/utils/config"
@@ -47,9 +48,12 @@ func Test_AmbientGatewayAPIConformance(t *testing.T) {
 	require.NoError(t, err, "error in NewASM")
 	hostnameType := v1.AddressType("Hostname")
 	supported := gwfeatures.AllFeatures.Clone().Delete(gwfeatures.MeshConsumerRouteFeature)
+	kubeOpts, err := utils.GetKubeClientOptions()
+	require.NoError(t, err, "failed to get kubeclient options")
 	opts := suite.ConformanceOptions{
-		Client: ackOperator.KubeClient,
-		// ClientOptions:            clientOptions,
+		// RunTest:                  "TLSRouteInvalidReferenceGrant",
+		Client:                   ackOperator.KubeClient,
+		ClientOptions:            kubeOpts,
 		Clientset:                ackOperator.ClientSet,
 		RestConfig:               ackOperator.RestConfig,
 		GatewayClassName:         "istio",
@@ -71,8 +75,8 @@ func Test_AmbientGatewayAPIConformance(t *testing.T) {
 			Organization: "Alibaba Cloud",
 			Project:      "Alibaba Cloud Service Mesh",
 			URL:          "https://www.alibabacloud.com/help/zh/asm/",
-			// Version:      ASM Version,
-			Contact: []string{"https://www.alibabacloud.com/help/zh/asm/"},
+			Version:      "1.27",
+			Contact:      []string{"https://www.alibabacloud.com/help/zh/asm/"},
 		},
 		NamespaceLabels: map[string]string{
 			label.IoIstioDataplaneMode.Name: "ambient",
@@ -106,9 +110,12 @@ func asmPostSetup(t *testing.T, asmOperator *asm.ASM) {
 				"istio.io/dataplane-mode": "ambient",
 			}
 		}
-		// Use patch instead of Create to handle both create and update scenarios
-		err := asmOperator.KubeClient.Patch(context.TODO(), namespace, client.Apply, client.ForceOwnership)
-		require.NoError(t, err, "error in create ns in ASM")
+		// Try to create the namespace, and ignore AlreadyExists errors
+		err := asmOperator.KubeClient.Create(context.TODO(), namespace)
+		if client.IgnoreAlreadyExists(err) != nil {
+			// If it's not an AlreadyExists error, it's a real error
+			require.NoError(t, err, "error in create ns in ASM")
+		}
 	}
 }
 
@@ -116,7 +123,7 @@ func ackPostSetup(t *testing.T, ackOperator *ack.ACK) {
 	// remove dataplane-mode label in ack gateway-conformance-infra namespace using patch
 	patch := []byte(`{"metadata":{"labels":{"istio.io/dataplane-mode": null}}}`)
 	_, err := ackOperator.ClientSet.CoreV1().Namespaces().Patch(t.Context(), "gateway-conformance-infra",
-		types.MergePatchType, patch, metav1.PatchOptions{})
+		types.MergePatchType, patch, metav1.PatchOptions{FieldManager: "ack-operator"})
 	require.NoError(t, err, "error in patch ns gateway-conformance-infra")
 
 	// create waypoint for ns gateway-conformance-mesh
@@ -135,9 +142,9 @@ func ackPostSetup(t *testing.T, ackOperator *ack.ACK) {
 		},
 	}
 	err = ackOperator.KubeClient.Create(context.TODO(), gateway)
-	require.NoError(t, err, "error in create waypoint gateway")
+	require.NoError(t, client.IgnoreAlreadyExists(err), "error in create waypoint gateway")
 	patch = []byte(`{"metadata":{"labels":{"istio.io/use-waypoint": "waypoint"}}}`)
 	_, err = ackOperator.ClientSet.CoreV1().Namespaces().Patch(t.Context(), "gateway-conformance-mesh",
-		types.MergePatchType, patch, metav1.PatchOptions{})
+		types.MergePatchType, patch, metav1.PatchOptions{FieldManager: "ack-operator"})
 	require.NoError(t, err, "error in patch ns gateway-conformance-mesh")
 }

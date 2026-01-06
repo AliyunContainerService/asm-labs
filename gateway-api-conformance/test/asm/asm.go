@@ -77,7 +77,12 @@ func (a *ASM) initKubeClient() error {
 		return fmt.Errorf("failed to create REST config from kubeconfig: %v", err)
 	}
 
-	kubeClient, err := client.New(restConfig, client.Options{})
+	opt, err := utils.GetKubeClientOptions()
+	if err != nil {
+		return fmt.Errorf("failed to GetKubeClientOptions")
+	}
+
+	kubeClient, err := client.New(restConfig, opt)
 	if err != nil {
 		return fmt.Errorf("failed to create Kubernetes client: %v", err)
 	}

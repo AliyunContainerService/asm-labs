@@ -14,7 +14,6 @@ import (
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/credentials-go/credentials"
-	"istio.io/istio/pkg/kube"
 )
 
 type ACK struct {
@@ -75,7 +74,12 @@ func (a *ACK) initKubeClient() error {
 	}
 	a.RestConfig = restConfig
 
-	kubeClient, err := client.New(restConfig, client.Options{Scheme: kube.IstioScheme})
+	opt, err := utils.GetKubeClientOptions()
+	if err != nil {
+		return fmt.Errorf("failed to GetKubeClientOptions")
+	}
+
+	kubeClient, err := client.New(restConfig, opt)
 	if err != nil {
 		return fmt.Errorf("failed to create Kubernetes client: %v", err)
 	}
